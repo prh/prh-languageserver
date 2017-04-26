@@ -1,0 +1,8 @@
+.DS_Store
+
+node_modules/
+
+lib/**/*.js
+lib/**/*.js.map
+test/**/*.js
+test/**/*.js.map

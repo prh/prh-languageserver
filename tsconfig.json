@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		"target": "es6",
+		"noImplicitAny": true,
+		"noImplicitReturns": true,
+		"noImplicitThis": true,
+		"noUnusedLocals": true,
+		"alwaysStrict": true,
+		"strictNullChecks": true,
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"sourceMap": true,
+		"lib" : [ "es2016" ],
+		"types": [
+			"node"
+		]
+	},
+	"include": [
+		"lib/",
+		"test/"
+	],
+	"exclude": [
+		"node_modules"
+	]
+}
