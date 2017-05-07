@@ -15,7 +15,9 @@
     "test": "node test/input.js | node lib/index.js --stdio"
   },
   "dependencies": {
-    "vscode-languageserver": "^3.1.0"
+    "prh": "^3.0.1",
+    "vscode-languageserver": "^3.1.0",
+    "vscode-uri": "^1.0.0"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.32",
