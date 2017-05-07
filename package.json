@@ -2,15 +2,14 @@
   "name": "prh-languageserver",
   "displayName": "prh",
   "description": "Language Server of prh",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "vvakame",
   "engines": {
-    "node": "^4.0.0",
-    "vscode": "^1.1.0"
+    "node": ">= 4.2.0"
   },
   "main": "./lib/index",
   "scripts": {
-    "vscode:update": "node ./node_modules/vscode/bin/install",
+    "vscode:update": "npm_package_engines_vscode='^1.11.0' node ./node_modules/vscode/bin/install",
     "build": "tsfmt -r && tsc",
     "test": "node test/input.js | node lib/index.js --stdio"
   },
