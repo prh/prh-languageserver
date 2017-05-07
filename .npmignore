@@ -1,0 +1,21 @@
+.git/
+
+# for npm
+node_modules/
+npm-shrinkwrap.json
+yarn.lock
+
+# codes
+test/
+
+# for https://github.com/Microsoft/TypeScript/issues/4667
+lib/**/*.ts
+!lib/**/*.d.ts
+
+# misc
+fixture/
+.vscode/
+.gitignore
+tslint.json
+
+npm-debug.log
