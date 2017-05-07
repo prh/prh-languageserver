@@ -1,17 +1,17 @@
 {
   "name": "prh",
   "displayName": "prh",
-  "description": "",
+  "description": "Language Server of prh",
   "version": "0.0.1",
   "publisher": "vvakame",
   "engines": {
-    "node": "*",
+    "node": "^4.0.0",
     "vscode": "^1.11.0"
   },
-  "main": "./out/src/extension",
+  "main": "./lib/index",
   "scripts": {
-    "postinstall": "node ./node_modules/vscode/bin/install",
-    "build": "tsc",
+    "vscode:update": "node ./node_modules/vscode/bin/install",
+    "build": "tsfmt -r && tsc",
     "test": "node test/input.js | node lib/index.js --stdio"
   },
   "dependencies": {
@@ -24,6 +24,7 @@
     "@types/node": "^6.0.52",
     "mocha": "^2.3.3",
     "typescript": "^2.1.5",
+    "typescript-formatter": "^5.1.3",
     "vscode": "^1.1.0",
     "vscode-jsonrpc": "^3.2.0",
     "vscode-languageclient": "^3.2.0"
