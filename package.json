@@ -2,7 +2,7 @@
   "name": "prh-languageserver",
   "displayName": "prh",
   "description": "Language Server of prh",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "vvakame",
   "engines": {
     "node": ">= 4.2.0"
