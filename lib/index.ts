@@ -84,7 +84,6 @@ export class Handler {
     }
 
     onDidChangeConfiguration(change: DidChangeConfigurationParams) {
-        this.connection.tracer.log("aaa");
         this.connection.console.log(`onDidChangeConfiguration: ${JSON.stringify(change, null, 2)}`);
 
         const settings = change.settings as Settings;
@@ -105,13 +104,10 @@ export class Handler {
     }
 
     onDidChangeContent(change: TextDocumentChangeEvent) {
-        this.connection.console.log(`onDidChangeContent: ${JSON.stringify(change, null, 2)}`);
         this.sendValidationDiagnostics(change.document);
     }
 
     onDidChangeWatchedFiles(change: DidChangeWatchedFilesParams) {
-        this.connection.console.log(`onDidChangeWatchedFiles: ${JSON.stringify(change, null, 2)}`);
-
         if (this.workspaceRoot == null) {
             return;
         }
@@ -177,8 +173,6 @@ export class Handler {
     }
 
     onCodeAction(params: CodeActionParams): Command[] {
-        this.connection.console.log(`onCodeAction: ${JSON.stringify(params)}`);
-
         const textDocument = this.documents.get(params.textDocument.uri);
         const changeSet = this.documentValidate(textDocument);
         if (!changeSet) {
@@ -189,7 +183,6 @@ export class Handler {
             .filter(diff => {
                 const index = textDocument.offsetAt(params.range.start);
                 const tailIndex = textDocument.offsetAt(params.range.end);
-                this.connection.console.log(`Diff: ${JSON.stringify(diff)} ${index}:${tailIndex}`);
                 return diff.index === index && diff.tailIndex === tailIndex;
             })
             .map(diff => {
@@ -210,7 +203,6 @@ export class Handler {
     }
 
     onExecuteCommand(args: ExecuteCommandParams) {
-        this.connection.console.log(`onExecuteCommand: ${JSON.stringify(args)}`);
         switch (args.command) {
             case "replace":
                 this.executeReplace(args);
