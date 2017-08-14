@@ -84,7 +84,23 @@ let seq = 0;
 {
     const params: ExecuteCommandParams = {
         command: "replace",
-        arguments: ["./fixture/test.txt", "javascript", "JavaScript"],
+        arguments: [{
+            uri: "./fixture/test.txt",
+            version: 1,
+            textEdit: {
+                range: {
+                    start: {
+                        line: 0,
+                        character: 0,
+                    },
+                    end: {
+                        line: 0,
+                        character: "javascript".length,
+                    },
+                },
+                newText: "JavaScript",
+            },
+        }],
     };
     const req: RequestMessage = {
         jsonrpc: "2.0",
