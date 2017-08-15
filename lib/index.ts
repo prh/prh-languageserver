@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import * as path from "path";
 import { fromYAMLFilePath, Engine, ChangeSet, Diff } from "prh";
 
@@ -34,7 +35,7 @@ export interface ChangeSetCache {
 
 // https://github.com/Microsoft/language-server-protocol/blob/master/protocol.md
 export class Handler {
-    engine: Engine;
+    engine: Engine | null;
     enable: boolean;
     configPath: string;
     workspaceRoot?: string | null;
@@ -97,6 +98,16 @@ export class Handler {
         this.connection.console.log(`loadConfig: ${this.configPath}`);
 
         this.validationCache = {};
+
+        if (!fs.existsSync(this.configPath)) {
+            this.connection.console.log(`Config file not exists: ${this.configPath}`);
+
+            this.engine = null;
+            this.documents.all().forEach(document => {
+                this.connection.sendDiagnostics({ uri: document.uri, diagnostics: [] });
+            });
+            return;
+        }
 
         this.engine = fromYAMLFilePath(this.configPath);
 
