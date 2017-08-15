@@ -2,10 +2,11 @@
   "name": "prh-languageserver",
   "displayName": "prh",
   "description": "Language Server of prh",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "vvakame",
   "engines": {
-    "node": ">= 4.2.0"
+    "node": ">= 6.0.0",
+    "vscode": "^1.8.0"
   },
   "main": "./lib/index",
   "scripts": {
