@@ -2,7 +2,7 @@
   "name": "prh-languageserver",
   "displayName": "prh",
   "description": "Language Server of prh",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "vvakame",
   "engines": {
     "node": ">= 6.0.0",
@@ -15,7 +15,7 @@
     "test": "node test/input.js | node lib/index.js --stdio"
   },
   "dependencies": {
-    "prh": "3.1.1",
+    "prh": "^4.0.0",
     "vscode-languageserver": "3.2.2",
     "vscode-uri": "1.0.1"
   },

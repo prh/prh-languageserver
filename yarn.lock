@@ -210,9 +210,9 @@ commandpost@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/commandpost/-/commandpost-1.0.1.tgz#7d7e3e69ae8fe7d6949341e91596ede9b2d631fd"
 
-commandpost@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/commandpost/-/commandpost-1.2.0.tgz#b7e767cc90b3cfce33dd791b55648854accfe23e"
+commandpost@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/commandpost/-/commandpost-1.2.1.tgz#2e9c4c7508b9dc704afefaa91cab92ee6054cc68"
 
 concat-map@0.0.1:
   version "0.0.1"
@@ -267,6 +267,10 @@ delayed-stream@~1.0.0:
 diff@3.2.0:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/diff/-/diff-3.2.0.tgz#c9ce393a4b7cbd0b058a725c93df299027868ff9"
+
+diff@^3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/diff/-/diff-3.3.0.tgz#056695150d7aa93237ca7e378ac3b1682b7963b9"
 
 duplexer2@0.0.2:
   version "0.0.2"
@@ -1180,11 +1184,12 @@ preserve@^0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/preserve/-/preserve-0.2.0.tgz#815ed1f6ebc65926f865b310c0713bcb3315ce4b"
 
-prh@3.1.1:
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/prh/-/prh-3.1.1.tgz#621f1529f91a23a05e1f3d878869c8a88eb566b4"
+prh@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/prh/-/prh-4.0.0.tgz#5e8921c5de60897ede4c7766b22b23c5235281e3"
   dependencies:
-    commandpost "^1.2.0"
+    commandpost "^1.2.1"
+    diff "^3.3.0"
     js-yaml "^3.9.1"
 
 process-nextick-args@^1.0.6, process-nextick-args@~1.0.6:
@@ -1637,7 +1642,7 @@ vinyl@~2.0.1:
     remove-trailing-separator "^1.0.1"
     replace-ext "^1.0.0"
 
-vscode-jsonrpc@3.2.2, vscode-jsonrpc@^3.2.0:
+vscode-jsonrpc@3.2.0, vscode-jsonrpc@^3.2.0:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/vscode-jsonrpc/-/vscode-jsonrpc-3.2.0.tgz#c92b946ac385c8b41439b842b6bd07d517b64a7d"
 
