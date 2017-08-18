@@ -3,6 +3,7 @@
   "displayName": "prh",
   "description": "Language Server of prh",
   "version": "0.2.0",
+  "license": "MIT",
   "publisher": "vvakame",
   "engines": {
     "node": ">= 6.0.0",
