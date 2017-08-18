@@ -1,6 +1,6 @@
 import * as fs from "fs";
-import * as path from "path";
-import { fromYAMLFilePath, Engine, ChangeSet, Diff } from "prh";
+
+import { fromYAMLFilePaths, getRuleFilePath, Engine, ChangeSet, Diff } from "prh";
 
 import Uri from "vscode-uri";
 import {
@@ -16,7 +16,7 @@ export interface Settings {
 
 export interface PrhSettings {
     enable?: boolean;
-    configFile?: string;
+    configFiles?: string[];
     trace?: {
         server?: "off" | "messages" | "verbose";
     };
@@ -33,14 +33,20 @@ export interface ChangeSetCache {
     changeSet: ChangeSet;
 }
 
+const enum State {
+    valid = "valid",
+    invalid = "invalid",
+}
+
 // https://github.com/Microsoft/language-server-protocol/blob/master/protocol.md
 export class Handler {
-    engine: Engine | null;
     enable: boolean;
-    configPath: string;
-    workspaceRoot?: string | null;
+    configPaths: string[] | null;
 
-    validationCache: { [uri: string]: ChangeSetCache | null; } = {};
+    state = State.valid;
+
+    engineCache: { [concatenatedRulePaths: string]: Engine; } = {};
+    validationCache: { [uri: string]: ChangeSetCache; } = {};
 
     constructor(public connection: IConnection, public documents: TextDocuments) {
         this.connection.onInitialize(arg => this.onInitialized(arg));
@@ -57,7 +63,6 @@ export class Handler {
     }
 
     onInitialized(params: InitializeParams): InitializeResult {
-        this.workspaceRoot = params.rootUri || params.rootPath;
         return {
             capabilities: {
                 textDocumentSync: this.documents.syncKind,
@@ -89,103 +94,45 @@ export class Handler {
 
         const settings = change.settings as Settings;
         this.enable = !!settings.prh.enable;
-        this.configPath = settings.prh.configFile || "prh.yml";
+        this.configPaths = settings.prh.configFiles || [];
 
-        this.loadConfig();
-    }
-
-    loadConfig() {
-        this.connection.console.log(`loadConfig: ${this.configPath}`);
-
-        this.validationCache = {};
-
-        if (!fs.existsSync(this.configPath)) {
-            this.connection.console.log(`Config file not exists: ${this.configPath}`);
-
-            this.engine = null;
-            this.documents.all().forEach(document => {
-                this.connection.sendDiagnostics({ uri: document.uri, diagnostics: [] });
-            });
-            return;
-        }
-
-        this.engine = fromYAMLFilePath(this.configPath);
-
-        this.documents.all().forEach(document => this.sendValidationDiagnostics(document));
+        this.checkConfig();
+        this.documents.all().forEach(document => this.validateAndSendDiagnostics(document));
     }
 
     onDidChangeContent(change: TextDocumentChangeEvent) {
-        this.sendValidationDiagnostics(change.document);
+        this.validateAndSendDiagnostics(change.document);
     }
 
     onDidChangeWatchedFiles(change: DidChangeWatchedFilesParams) {
-        if (this.workspaceRoot == null) {
-            return;
-        }
-        let configUri = Uri.parse(this.workspaceRoot);
-        configUri = configUri.with({
-            path: path.resolve(configUri.path, this.configPath),
-        });
+        this.connection.console.log(`onDidChangeWatchedFiles: ${JSON.stringify(change, null, 2)}`);
 
-        const configChanged = change.changes.filter(change => change.uri === configUri.toString());
+        // 設定ファイルのいずれかが変更されたらキャッシュを捨てる
+        // TODO: 既知の問題として、imports先のymlファイルの更新を検出できない 自力でやるしかない…？
+        const configChanged = change.changes.some(change => {
+            const uri = Uri.parse(change.uri);
+            return Object.keys(this.engineCache).some(concatenatedRulePaths => {
+                // 若干雑な条件だけど間違っててもさほど痛くないのでOK
+                // rulePathはpwdからの相対パス表現なので注意
+                const rulePaths = concatenatedRulePaths.split("|");
+                return rulePaths.some(rulePath => {
+                    if (uri.path.endsWith(rulePath)) {
+                        this.connection.console.log(`matched: ${uri.path} - ${rulePath}`);
+                        return true;
+                    }
+                    return false;
+                });
+            });
+        });
         if (configChanged) {
-            this.loadConfig();
+            this.checkConfig();
+            this.documents.all().forEach(document => this.validateAndSendDiagnostics(document));
         }
-    }
-
-    documentValidate(textDocument: TextDocument): ChangeSet | null {
-        if (!this.engine || !this.enable) {
-            return null;
-        }
-        if (this.validationCache[textDocument.uri] && this.validationCache[textDocument.uri]!.version === textDocument.version) {
-            return this.validationCache[textDocument.uri]!.changeSet;
-        }
-        this.validationCache[textDocument.uri] = null;
-
-        const changeSet = this.engine.makeChangeSet(textDocument.uri, textDocument.getText());
-        if (!changeSet) {
-            return null;
-        }
-        this.validationCache[textDocument.uri] = {
-            version: textDocument.version,
-            changeSet,
-        };
-
-        return changeSet;
-    }
-
-    sendValidationDiagnostics(textDocument: TextDocument) {
-        const changeSet = this.documentValidate(textDocument);
-        if (!changeSet) {
-            return;
-        }
-
-        const diagnostics: Diagnostic[] = changeSet.diffs.map(diff => {
-            const start = textDocument.positionAt(diff.index);
-            const end = textDocument.positionAt(diff.tailIndex);
-            let message;
-            if (diff.rule && diff.rule.raw && diff.rule.raw.prh) {
-                message = `→${diff.expected || "??"} ${diff.rule.raw.prh}`;
-            } else {
-                message = `→${diff.expected || "??"}`;
-            }
-            return {
-                severity: DiagnosticSeverity.Warning,
-                range: {
-                    start,
-                    end,
-                },
-                message,
-                source: "prh",
-            };
-        });
-
-        this.connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
     }
 
     onCodeAction(params: CodeActionParams): Command[] {
         const textDocument = this.documents.get(params.textDocument.uri);
-        const changeSet = this.documentValidate(textDocument);
+        const changeSet = this.makeChangeSet(textDocument);
         if (!changeSet) {
             return [];
         }
@@ -202,11 +149,11 @@ export class Handler {
                     version: textDocument.version,
                     textEdit: {
                         range: params.range,
-                        newText: diff.expected || diff.matches[0],
+                        newText: diff.newText || "??",
                     },
                 };
                 return {
-                    title: `→ ${diff.expected}`,
+                    title: `→ ${diff.newText || "??"}`,
                     command: "replace",
                     arguments: [commandParams],
                 };
@@ -226,11 +173,128 @@ export class Handler {
         }
     }
 
+    invalidateCache() {
+        this.engineCache = {};
+        this.validationCache = {};
+    }
+
+    checkConfig() {
+        this.configPaths = this.configPaths || [];
+        this.connection.console.log(`loadConfig: ${this.configPaths.join(", ") || "implicit"}`);
+
+        this.invalidateCache();
+
+        for (let configPath of this.configPaths) {
+            if (!fs.existsSync(configPath)) {
+                this.connection.console.log(`rule file not exists: ${configPath}`);
+                if (this.state !== State.invalid) {
+                    this.connection.window.showWarningMessage(`prh: 指定された設定ファイルが見つかりません ${configPath}`);
+                }
+                this.state = State.invalid;
+                this.documents.all().forEach(document => this.clearDiagnostics(document));
+                return;
+            }
+        }
+        this.state = State.valid;
+    }
+
+    makeChangeSet(textDocument: TextDocument): ChangeSet | null {
+        if (!this.enable || this.state === State.invalid) {
+            return null;
+        }
+        if (this.validationCache[textDocument.uri] && this.validationCache[textDocument.uri].version === textDocument.version) {
+            return this.validationCache[textDocument.uri].changeSet;
+        }
+        delete this.validationCache[textDocument.uri];
+
+        let configPaths: string[];
+        if (this.configPaths && this.configPaths[0]) {
+            configPaths = this.configPaths;
+        } else {
+            const contentUri = Uri.parse(textDocument.uri);
+            if (contentUri.scheme !== "file") {
+                return null;
+            }
+            let foundPath = getRuleFilePath(contentUri.path);
+            if (!foundPath) {
+                this.connection.console.log(`rule file not found for ${textDocument.uri}`);
+                return null;
+            }
+            this.connection.console.log(`rule file found: ${foundPath}`);
+            configPaths = [foundPath];
+        }
+
+        let engine = this.engineCache[configPaths.join("|")];
+        if (!engine) {
+            try {
+                engine = fromYAMLFilePaths(...configPaths);
+            } catch (e) {
+                this.connection.console.error(e);
+                if (e instanceof Error) {
+                    this.connection.window.showErrorMessage(`prh: \`${e.message}\` from ${configPaths.join(" ,")}`);
+                    return null;
+                }
+            }
+            this.engineCache[configPaths.join("|")] = engine;
+        }
+
+        const changeSet = engine.makeChangeSet(textDocument.uri, textDocument.getText());
+        if (!changeSet) {
+            return null;
+        }
+        this.validationCache[textDocument.uri] = {
+            version: textDocument.version,
+            changeSet,
+        };
+
+        return changeSet;
+    }
+
+    makeDiagnostic(textDocument: TextDocument): Diagnostic[] | null {
+        const changeSet = this.makeChangeSet(textDocument);
+        if (!changeSet) {
+            return null;
+        }
+
+        return changeSet.diffs.map(diff => {
+
+            const start = textDocument.positionAt(diff.index);
+            const end = textDocument.positionAt(diff.tailIndex);
+            let message;
+            this.connection.console.log(JSON.stringify(diff));
+            diff.apply(textDocument.getText())
+            if (diff.rule && diff.rule.raw && diff.rule.raw.prh) {
+                message = `→${diff.newText || "??"} ${diff.rule.raw.prh}`;
+            } else {
+                message = `→${diff.newText || "??"}`;
+            }
+            return {
+                severity: DiagnosticSeverity.Warning,
+                range: {
+                    start,
+                    end,
+                },
+                message,
+                source: "prh",
+            };
+        });
+    }
+
+    validateAndSendDiagnostics(textDocument: TextDocument) {
+        const diagnostics = this.makeDiagnostic(textDocument);
+        this.connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: diagnostics || [] });
+    }
+
+    clearDiagnostics(textDocument: TextDocument) {
+        this.connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: [] });
+    }
+
     executeReplace(args: ExecuteCommandParams) {
         if (!args.arguments || !args.arguments[0]) {
             return;
         }
         const commandParams: ReplaceCommandParams = args.arguments[0];
+        this.connection.console.log(JSON.stringify(commandParams));
 
         const textDocument = this.documents.get(commandParams.uri);
         if (commandParams.version !== textDocument.version) {
@@ -257,7 +321,7 @@ export class Handler {
         }
 
         const textDocument = this.documents.get(args.arguments[0]);
-        const changeSet = this.documentValidate(textDocument);
+        const changeSet = this.makeChangeSet(textDocument);
         if (!changeSet) {
             return;
         }
@@ -280,7 +344,7 @@ export class Handler {
         const end = textDocument.positionAt(diff.tailIndex);
         return {
             range: { start, end },
-            newText: diff.expected || diff.matches[0],
+            newText: diff.newText || "??",
         };
     }
 }
