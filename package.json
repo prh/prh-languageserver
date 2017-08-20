@@ -9,6 +9,9 @@
     "node": ">= 6.0.0",
     "vscode": "^1.8.0"
   },
+  "bin": {
+    "prhls": "./bin/prhls"
+  },
   "main": "./lib/index",
   "scripts": {
     "vscode:update": "npm_package_engines_vscode='^1.11.0' node ./node_modules/vscode/bin/install",
