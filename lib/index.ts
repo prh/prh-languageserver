@@ -108,7 +108,6 @@ export class Handler {
         this.connection.console.log(`onDidChangeWatchedFiles: ${JSON.stringify(change, null, 2)}`);
 
         // 設定ファイルのいずれかが変更されたらキャッシュを捨てる
-        // TODO: 既知の問題として、imports先のymlファイルの更新を検出できない 自力でやるしかない…？
         const configChanged = change.changes.some(change => {
             const uri = Uri.parse(change.uri);
             return Object.keys(this.engineCache).some(concatenatedRulePaths => {

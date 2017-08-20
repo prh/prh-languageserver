@@ -9,3 +9,7 @@ $ npm run vscode:update
 $ npm run build
 $ npm run test
 ```
+
+## How to debug
+
+attached from vscode-prh-extention via VSCode.
