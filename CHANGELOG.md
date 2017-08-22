@@ -1,3 +1,14 @@
+<a name="1.0.0"></a>
+# [1.0.0](https://github.com/prh/prh-languageserver/compare/v0.4.0...v1.0.0) (2017-08-22)
+
+そろそろ使い物になると思うのでsemverに従った運用に変える。
+
+### Features
+
+* **prhls:** CHANGELOG.md生成のための仕組みを導入 ([73f1490](https://github.com/prh/prh-languageserver/commit/73f1490))
+
+
+
 <a name="0.4.0"></a>
 # [0.4.0](https://github.com/prh/prh-languageserver/compare/v0.3.0...v0.4.0) (2017-08-20)
 
