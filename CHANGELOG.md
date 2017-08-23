@@ -1,3 +1,13 @@
+<a name="1.0.1"></a>
+## [1.0.1](https://github.com/prh/prh-languageserver/compare/v1.0.0...v1.0.1) (2017-08-23)
+
+
+### Bug Fixes
+
+* **prhls:** workspace/applyEdit の結果のPromiseでrejectをハンドルしてなかったのを修正 ([a21ca5a](https://github.com/prh/prh-languageserver/commit/a21ca5a))
+
+
+
 <a name="1.0.0"></a>
 # [1.0.0](https://github.com/prh/prh-languageserver/compare/v0.4.0...v1.0.0) (2017-08-22)
 

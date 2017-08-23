@@ -2,7 +2,7 @@
   "name": "prh-languageserver",
   "displayName": "prh",
   "description": "Language Server of prh",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "publisher": "vvakame",
   "engines": {
