@@ -311,6 +311,8 @@ export class Handler {
             }],
         }).then(result => {
             this.connection.console.log(`Apply edit: ${JSON.stringify(result)}`);
+        }, e => {
+            this.connection.console.error(`error on executeReplace: ${e}`)
         });
     }
 
@@ -335,6 +337,8 @@ export class Handler {
             }],
         }).then(result => {
             this.connection.console.log(`Apply edit: ${JSON.stringify(result)}`);
+        }, e => {
+            this.connection.console.error(`error on executeApplyAllQuickFixes: ${e}`)
         });
     }
 
