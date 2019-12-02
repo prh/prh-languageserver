@@ -2,7 +2,7 @@ import * as fs from "fs";
 
 import { fromYAMLFilePaths, getRuleFilePath, Engine, ChangeSet, Diff } from "prh";
 
-import Uri from "vscode-uri";
+import { URI } from "vscode-uri";
 import {
     createConnection,
     TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity, IConnection, TextDocumentChangeEvent,
@@ -109,7 +109,7 @@ export class Handler {
 
         // 設定ファイルのいずれかが変更されたらキャッシュを捨てる
         const configChanged = change.changes.some(change => {
-            const uri = Uri.parse(change.uri);
+            const uri = URI.parse(change.uri);
             return Object.keys(this.engineCache).some(concatenatedRulePaths => {
                 // 若干雑な条件だけど間違っててもさほど痛くないのでOK
                 // rulePathはpwdからの相対パス表現なので注意
@@ -210,7 +210,7 @@ export class Handler {
         if (this.configPaths && this.configPaths[0]) {
             configPaths = this.configPaths;
         } else {
-            const contentUri = Uri.parse(textDocument.uri);
+            const contentUri = URI.parse(textDocument.uri);
             if (contentUri.scheme !== "file") {
                 return null;
             }
