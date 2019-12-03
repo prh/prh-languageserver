@@ -7,7 +7,7 @@ import {
     createConnection,
     TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity, IConnection, TextDocumentChangeEvent,
     InitializeParams, InitializeResult, DidChangeConfigurationParams, DidChangeWatchedFilesParams,
-    CodeActionParams, Command, ExecuteCommandParams, TextEdit,
+    CodeAction, CodeActionKind, CodeActionParams, Command, ExecuteCommandParams, TextEdit, Range,
 } from "vscode-languageserver";
 
 export interface Settings {
@@ -74,7 +74,9 @@ export class Handler {
                 documentHighlightProvider: false,
                 documentSymbolProvider: false,
                 workspaceSymbolProvider: false,
-                codeActionProvider: true,
+                codeActionProvider: {
+                    codeActionKinds: [CodeActionKind.QuickFix]
+                },
                 codeLensProvider: void 0,
                 documentFormattingProvider: false,
                 documentRangeFormattingProvider: false,
@@ -129,7 +131,7 @@ export class Handler {
         }
     }
 
-    onCodeAction(params: CodeActionParams): Command[] {
+    onCodeAction(params: CodeActionParams): CodeAction[] {
         const textDocument = this.documents.get(params.textDocument.uri);
         if (!textDocument) {
             return [];
@@ -140,27 +142,41 @@ export class Handler {
             return [];
         }
 
-        return changeSet.diffs
-            .filter(diff => {
-                const index = textDocument.offsetAt(params.range.start);
-                const tailIndex = textDocument.offsetAt(params.range.end);
-                return diff.index === index && diff.tailIndex === tailIndex;
-            })
-            .map(diff => {
-                const commandParams: ReplaceCommandParams = {
-                    uri: textDocument.uri,
-                    version: textDocument.version,
-                    textEdit: {
-                        range: params.range,
-                        newText: diff.newText || "??",
-                    },
-                };
-                return {
-                    title: `→ ${diff.newText || "??"}`,
-                    command: "replace",
-                    arguments: [commandParams],
-                };
-            });
+        const diffs: Diff[] = changeSet.diffs.filter(diff => {
+            const index = textDocument.offsetAt(params.range.start);
+            const tailIndex = textDocument.offsetAt(params.range.end);
+            return diff.index === index && diff.tailIndex === tailIndex;
+        });
+
+        const { range, context } = params;
+
+        const actions: CodeAction[] = diffs.map(diff => {
+            const newText = diff.newText || "??";
+            const textEdit: TextEdit = {
+                range,
+                newText
+            };
+            const commandParams: ReplaceCommandParams = {
+                uri: textDocument.uri,
+                version: textDocument.version,
+                textEdit,
+            };
+            const title = `→ ${diff.newText || "??"}`;
+            const command = Command.create(
+                title,
+                "replace",
+                commandParams
+            );
+            const action = CodeAction.create(
+                title,
+                command,
+                CodeActionKind.QuickFix
+            );
+            action.diagnostics = context.diagnostics;
+            return action;
+        });
+
+        return actions;
     }
 
     onExecuteCommand(args: ExecuteCommandParams) {
@@ -263,6 +279,7 @@ export class Handler {
 
             const start = textDocument.positionAt(diff.index);
             const end = textDocument.positionAt(diff.tailIndex);
+            const range = Range.create(start, end);
             let message;
             this.connection.console.log(JSON.stringify(diff));
             diff.apply(textDocument.getText())
@@ -271,15 +288,13 @@ export class Handler {
             } else {
                 message = `→${diff.newText || "??"}`;
             }
-            return {
-                severity: DiagnosticSeverity.Warning,
-                range: {
-                    start,
-                    end,
-                },
+            return Diagnostic.create(
+                range,
                 message,
-                source: "prh",
-            };
+                DiagnosticSeverity.Warning,
+                undefined,
+                "prh"
+            );
         });
     }
 
