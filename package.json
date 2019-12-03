@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "prh": "^5.3.0",
-    "vscode-languageserver": "3.2.2",
+    "vscode-languageserver": "5.2.1",
     "vscode-uri": "2.1.1"
   },
   "devDependencies": {
@@ -32,7 +32,7 @@
     "mocha": "^3.5.0",
     "typescript": "3.6.3",
     "typescript-formatter": "^6.0.0",
-    "vscode-jsonrpc": "3.2.0",
-    "vscode-languageclient": "3.3.0"
+    "vscode-jsonrpc": "4.0.0",
+    "vscode-languageclient": "5.2.1"
   }
 }

@@ -19,6 +19,7 @@ let seq = 0;
             },
         },
         trace: "verbose",
+        workspaceFolders: null,
     };
     const req: RequestMessage = {
         jsonrpc: "2.0",

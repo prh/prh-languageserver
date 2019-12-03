@@ -131,6 +131,10 @@ export class Handler {
 
     onCodeAction(params: CodeActionParams): Command[] {
         const textDocument = this.documents.get(params.textDocument.uri);
+        if (!textDocument) {
+            return [];
+        }
+
         const changeSet = this.makeChangeSet(textDocument);
         if (!changeSet) {
             return [];
@@ -296,6 +300,10 @@ export class Handler {
         this.connection.console.log(JSON.stringify(commandParams));
 
         const textDocument = this.documents.get(commandParams.uri);
+        if (!textDocument) {
+            return;
+        }
+
         if (commandParams.version !== textDocument.version) {
             this.connection.console.log(`Replace, document version mismatch: expected: ${commandParams.version}, actual: ${textDocument.version}`);
             return;
@@ -322,6 +330,10 @@ export class Handler {
         }
 
         const textDocument = this.documents.get(args.arguments[0]);
+        if (!textDocument) {
+            return;
+        }
+
         const changeSet = this.makeChangeSet(textDocument);
         if (!changeSet) {
             return;
