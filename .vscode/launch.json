@@ -9,7 +9,7 @@
 			"port": 6009,
 			"sourceMaps": true,
 			"outFiles": [ "${workspaceRoot}/src/**/*.js" ],
-			"protocol": "legacy"
+			"protocol": "auto"
 		}
 	]
 }

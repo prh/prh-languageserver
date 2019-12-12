@@ -2,12 +2,12 @@ import * as fs from "fs";
 
 import { fromYAMLFilePaths, getRuleFilePath, Engine, ChangeSet, Diff } from "prh";
 
-import Uri from "vscode-uri";
+import { URI } from "vscode-uri";
 import {
     createConnection,
     TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity, IConnection, TextDocumentChangeEvent,
     InitializeParams, InitializeResult, DidChangeConfigurationParams, DidChangeWatchedFilesParams,
-    CodeActionParams, Command, ExecuteCommandParams, TextEdit,
+    CodeAction, CodeActionKind, CodeActionParams, Command, ExecuteCommandParams, TextEdit, Range,
 } from "vscode-languageserver";
 
 export interface Settings {
@@ -74,7 +74,9 @@ export class Handler {
                 documentHighlightProvider: false,
                 documentSymbolProvider: false,
                 workspaceSymbolProvider: false,
-                codeActionProvider: true,
+                codeActionProvider: {
+                    codeActionKinds: [CodeActionKind.QuickFix]
+                },
                 codeLensProvider: void 0,
                 documentFormattingProvider: false,
                 documentRangeFormattingProvider: false,
@@ -109,7 +111,7 @@ export class Handler {
 
         // 設定ファイルのいずれかが変更されたらキャッシュを捨てる
         const configChanged = change.changes.some(change => {
-            const uri = Uri.parse(change.uri);
+            const uri = URI.parse(change.uri);
             return Object.keys(this.engineCache).some(concatenatedRulePaths => {
                 // 若干雑な条件だけど間違っててもさほど痛くないのでOK
                 // rulePathはpwdからの相対パス表現なので注意
@@ -129,34 +131,52 @@ export class Handler {
         }
     }
 
-    onCodeAction(params: CodeActionParams): Command[] {
+    onCodeAction(params: CodeActionParams): CodeAction[] {
         const textDocument = this.documents.get(params.textDocument.uri);
+        if (!textDocument) {
+            return [];
+        }
+
         const changeSet = this.makeChangeSet(textDocument);
         if (!changeSet) {
             return [];
         }
 
-        return changeSet.diffs
-            .filter(diff => {
-                const index = textDocument.offsetAt(params.range.start);
-                const tailIndex = textDocument.offsetAt(params.range.end);
-                return diff.index === index && diff.tailIndex === tailIndex;
-            })
-            .map(diff => {
-                const commandParams: ReplaceCommandParams = {
-                    uri: textDocument.uri,
-                    version: textDocument.version,
-                    textEdit: {
-                        range: params.range,
-                        newText: diff.newText || "??",
-                    },
-                };
-                return {
-                    title: `→ ${diff.newText || "??"}`,
-                    command: "replace",
-                    arguments: [commandParams],
-                };
-            });
+        const diffs: Diff[] = changeSet.diffs.filter(diff => {
+            const index = textDocument.offsetAt(params.range.start);
+            const tailIndex = textDocument.offsetAt(params.range.end);
+            return diff.index === index && diff.tailIndex === tailIndex;
+        });
+
+        const { range, context } = params;
+
+        const actions: CodeAction[] = diffs.map(diff => {
+            const newText = diff.newText || "??";
+            const textEdit: TextEdit = {
+                range,
+                newText
+            };
+            const commandParams: ReplaceCommandParams = {
+                uri: textDocument.uri,
+                version: textDocument.version,
+                textEdit,
+            };
+            const title = `→ ${diff.newText || "??"}`;
+            const command = Command.create(
+                title,
+                "replace",
+                commandParams
+            );
+            const action = CodeAction.create(
+                title,
+                command,
+                CodeActionKind.QuickFix
+            );
+            action.diagnostics = context.diagnostics;
+            return action;
+        });
+
+        return actions;
     }
 
     onExecuteCommand(args: ExecuteCommandParams) {
@@ -210,7 +230,7 @@ export class Handler {
         if (this.configPaths && this.configPaths[0]) {
             configPaths = this.configPaths;
         } else {
-            const contentUri = Uri.parse(textDocument.uri);
+            const contentUri = URI.parse(textDocument.uri);
             if (contentUri.scheme !== "file") {
                 return null;
             }
@@ -259,6 +279,7 @@ export class Handler {
 
             const start = textDocument.positionAt(diff.index);
             const end = textDocument.positionAt(diff.tailIndex);
+            const range = Range.create(start, end);
             let message;
             this.connection.console.log(JSON.stringify(diff));
             diff.apply(textDocument.getText())
@@ -267,15 +288,13 @@ export class Handler {
             } else {
                 message = `→${diff.newText || "??"}`;
             }
-            return {
-                severity: DiagnosticSeverity.Warning,
-                range: {
-                    start,
-                    end,
-                },
+            return Diagnostic.create(
+                range,
                 message,
-                source: "prh",
-            };
+                DiagnosticSeverity.Warning,
+                undefined,
+                "prh"
+            );
         });
     }
 
@@ -296,6 +315,10 @@ export class Handler {
         this.connection.console.log(JSON.stringify(commandParams));
 
         const textDocument = this.documents.get(commandParams.uri);
+        if (!textDocument) {
+            return;
+        }
+
         if (commandParams.version !== textDocument.version) {
             this.connection.console.log(`Replace, document version mismatch: expected: ${commandParams.version}, actual: ${textDocument.version}`);
             return;
@@ -322,6 +345,10 @@ export class Handler {
         }
 
         const textDocument = this.documents.get(args.arguments[0]);
+        if (!textDocument) {
+            return;
+        }
+
         const changeSet = this.makeChangeSet(textDocument);
         if (!changeSet) {
             return;
