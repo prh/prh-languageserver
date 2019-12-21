@@ -42,7 +42,7 @@ function sendRequest(reqObj: any, input: Readable) {
  * 入力ストリーム。
  */
 const input = new Readable();
-input._read = () => {};
+input._read = () => { };
 
 let actualOut = '';
 
