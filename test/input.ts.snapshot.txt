@@ -1,0 +1,15 @@
+Content-Length: 469
+
+{"jsonrpc":"2.0","id":1,"result":{"capabilities":{"textDocumentSync":1,"hoverProvider":false,"definitionProvider":false,"referencesProvider":false,"documentHighlightProvider":false,"documentSymbolProvider":false,"workspaceSymbolProvider":false,"codeActionProvider":{"codeActionKinds":["quickfix"]},"documentFormattingProvider":false,"documentRangeFormattingProvider":false,"renameProvider":false,"executeCommandProvider":{"commands":["replace"]},"experimental":false}}}Content-Length: 115
+
+{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":"./fixture/test.txt","diagnostics":[]}}Content-Length: 36
+
+{"jsonrpc":"2.0","id":2,"result":[]}Content-Length: 256
+
+{"jsonrpc":"2.0","method":"window/logMessage","params":{"type":4,"message":"{\"uri\":\"./fixture/test.txt\",\"version\":1,\"textEdit\":{\"range\":{\"start\":{\"line\":0,\"character\":0},\"end\":{\"line\":0,\"character\":10}},\"newText\":\"JavaScript\"}}"}}Content-Length: 263
+
+{"jsonrpc":"2.0","id":0,"method":"workspace/applyEdit","params":{"edit":{"documentChanges":[{"textDocument":{"uri":"./fixture/test.txt","version":1},"edits":[{"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":10}},"newText":"JavaScript"}]}]}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":3,"result":null}Content-Length: 38
+
+{"jsonrpc":"2.0","id":4,"result":null}
